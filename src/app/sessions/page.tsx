@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import { sessions } from '@/content/sessions';
+import { availableSession, canAccessSession } from '@/lib/access';
+import { COURSE_COMPLETED } from '@/lib/config';
+export default function SessionList(){return <><div className="intro"><p className="eyebrow">게임에서 일상으로</p><h1>숲에서의 경험을<br/>일상에서 이어가요.</h1><p className="muted">함께 경험한 회기를 다시 펼쳐보세요.<br/>연습은 가능한 만큼, 기록은 원할 때.</p></div><ol className="session-list">{sessions.map(session=>{const accessible=canAccessSession(session.order); const current=!COURSE_COMPLETED&&session.order===availableSession; const content=<><span className="session-number">{String(session.order).padStart(2,'0')}</span><span className="row-text">{session.title}{current&&<small>이번 회기</small>}</span><span className="status">{accessible?<span aria-hidden="true">↗</span>:'이후 회기'}</span></>;return <li key={session.id}>{accessible?<Link className={`session-row ${current?'current':''}`} href={`/sessions/${session.id}`}>{content}</Link>:<div className="session-row locked">{content}</div>}</li>})}</ol></>;}

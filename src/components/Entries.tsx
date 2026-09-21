@@ -1,0 +1,15 @@
+'use client';
+/* Browser-only storage is loaded once after hydration; the server intentionally renders an empty loading state. */
+/* eslint-disable react-hooks/set-state-in-effect */
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import {sessions} from '@/content/sessions';
+import {practices} from '@/content/practices';
+import {entrySchemas} from '@/content/entrySchemas';
+import {listEntries,getEntry,deleteEntry} from '@/lib/storage';
+import type {Entry} from '@/lib/types';
+import {EntryForm} from './EntryForm';
+const date=(value:string)=>new Date(value).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+const title=(entry:Entry)=>sessions.find(s=>s.id===entry.sessionId)?.title??practices.find(p=>p.id===entry.practiceId)?.title??'자유 기록';
+export function EntryList(){const [entries,setEntries]=useState<Entry[]|null>(null);useEffect(()=>{setEntries(listEntries());},[]);return <><div className="intro"><p className="eyebrow">나의 워크북</p><h1>남겨둔 경험</h1><p className="muted">그때 알아차린 것을 천천히 다시 읽어보세요.</p></div>{entries===null?<p role="status">기록을 불러오는 중입니다.</p>:entries.length===0?<div className="empty"><p>아직 남겨둔 기록이 없어요.</p><p className="muted">회기에서 경험을 이어가고,<br/>남기고 싶을 때 기록해보세요.</p><Link className="text-link" href="/sessions">회기 펼쳐보기 →</Link></div>:<ol className="entry-list">{entries.map(entry=><li key={entry.id}><Link className="entry-row" href={`/entries/${entry.id}`}><time dateTime={entry.createdAt}>{date(entry.createdAt)}</time><h2>{title(entry)}</h2><p className="preview">{Object.values(entry.responses).find(s=>s.trim())??'글 없이 남겨둔 기록'}</p><span className="text-link">다시 읽기 →</span></Link></li>)}</ol>}</>;}
+export function EntryDetail({id}:{id:string}){const [entry,setEntry]=useState<Entry|null|undefined>(undefined);const [editing,setEditing]=useState(false);const [error,setError]=useState('');useEffect(()=>{setEntry(getEntry(id)??null);},[id]);if(entry===undefined)return <p role="status">기록을 불러오는 중입니다.</p>;if(entry===null)return <div className="empty"><h1>기록을 찾을 수 없어요</h1><Link className="text-link" href="/entries">기록 보기 →</Link></div>;const schema=entrySchemas.find(s=>s.id===entry.schemaId);if(editing&&schema)return <EntryForm schema={schema} entry={entry} sessionId={entry.sessionId} practiceId={entry.practiceId}/>;return <><Link className="text-link" href="/entries">← 기록</Link><section className="section"><p className="eyebrow">{date(entry.createdAt)}</p><h1>{title(entry)}</h1>{(schema?.questions??Object.keys(entry.responses).map(key=>({key,label:key}))).map(q=><div className="section" key={q.key}><h2>{q.label}</h2><p className="response">{entry.responses[q.key]?.trim()||'남겨둔 답변이 없습니다.'}</p></div>)}{error&&<p className="error" role="alert">{error}</p>}<div className="actions"><button className="button secondary" onClick={()=>setEditing(true)}>수정</button><button className="text-link" onClick={()=>{if(window.confirm('이 기록을 삭제할까요? 삭제한 기록은 되돌릴 수 없습니다.')){try{deleteEntry(entry.id);setEntry(null);}catch{setError('삭제하지 못했습니다. 다시 시도해 주세요.');}}}}>삭제</button></div></section></>;}
