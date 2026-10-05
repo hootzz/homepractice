@@ -1,4 +1,2 @@
-import {notFound} from 'next/navigation';
-import {canPlan} from '@/lib/access';
-import {PracticePlanBuilder} from '@/components/PracticePlanBuilder';
-export default function MyPractice(){if(!canPlan())notFound();return <PracticePlanBuilder/>;}
+import {MyPracticeView} from '@/components/MyPractice';
+export default function Page(){return <MyPracticeView/>;}

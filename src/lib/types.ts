@@ -38,6 +38,9 @@ export interface Entry {
   id: string;
   sessionId?: string;
   practiceId?: string;
+  weeklyTaskId?: string;
+  questionSnapshot?: Record<string,string>;
+  practiceNameSnapshot?: string;
   schemaId: string;
   responses: Record<string, string>;
   createdAt: string;
