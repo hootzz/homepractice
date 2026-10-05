@@ -11,7 +11,7 @@ import { HomePractice } from './HomePractice';
 import { SceneSketch } from './SceneSketch';
 import type { Practice, Session } from '@/lib/workbookTypes';
 
-export function Closed({missing=false}:{missing?:boolean}) {return <section className="empty"><h1>{missing?'안내를 찾을 수 없어요':'이야기를 마친 뒤 이어가요'}</h1><p>{missing?'지금 사용할 수 있는 연습으로 돌아가요.':'게임에서 해당 회기를 마치면 연결된 연습을 펼칠 수 있어요.'}</p><Link className="text-link" href="/sessions">이야기 보기 →</Link></section>;}
+export function Closed({missing=false,session}:{missing?:boolean;session?:Session}) {return <section className="empty">{session&&<p className="eyebrow">S{session.order} · {session.animal} · {session.user_facing_name}</p>}<h1>{missing?'안내를 찾을 수 없어요':'이야기를 마친 뒤 이어가요'}</h1><p>{missing?'지금 사용할 수 있는 연습으로 돌아가요.':'게임에서 이 이야기를 마치면 여기서 이어갈 수 있어요.'}</p><Link className="text-link" href="/sessions">이야기 보기 →</Link></section>;}
 
 const sessionOf=(id:string)=>sessions.find(s=>s.id===id) as Session;
 /** Formal practices are listed apart from the daily-life practice, quietly. */
@@ -54,7 +54,7 @@ export function SessionListView(){
 
 export function SessionView({id}:{id:string}) {
   const {store,release}=useWorkbook();if(!store)return null;const session=sessions.find(s=>s.id===id);if(!session)return <Closed missing/>;
-  if(!canAccessSession(session.id,store.progress))return <Closed/>;
+  if(!canAccessSession(session.id,store.progress))return <Closed session={session}/>;
   const task=release.weeklyTasks.find(t=>t.sessionId===session.id);
   const regular=repertoire(release,store.progress);
   const footer=regular.length>0?<section className="hp-more anytime"><h2>{ANYTIME}</h2><PracticeCards items={regular}/></section>:undefined;
