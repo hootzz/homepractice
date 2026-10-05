@@ -7,7 +7,8 @@ import {entrySchemas} from '../content/entrySchemas';
 export interface ExportBlock { text: string; kind: 'title' | 'heading' | 'label' | 'body' }
 export interface ExportKitItem { practiceId: string; cue?: string; situation?: string; personalReason?: string }
 const practiceName = (id?: string) => practices.find(p => p.id === id)?.title ?? id ?? '연습 미지정';
-const displayDate = (value: string) => Number.isNaN(Date.parse(value)) ? value : new Date(value).toLocaleString('ko-KR');
+// Dates only: a record is about the day, not the second it was saved.
+const displayDate = (value: string) => Number.isNaN(Date.parse(value)) ? value : new Date(value).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
 /** Export only authored responses. Unknown legacy fields are retained, never inferred. */
 export function recordExportBlocks(entries: Entry[], kit: ExportKitItem[], generatedAt: string, legacyPlans: PracticePlan[] = [], names: Record<string,string> = {}): ExportBlock[] {
@@ -46,7 +47,7 @@ export function recordExportBlocks(entries: Entry[], kit: ExportKitItem[], gener
   return blocks;
 }
 
-/** Browser-only image PDF: system Korean fonts, no network, no storage mutation.
+/** Browser-only image PDF: the app font (MaruBuri) or system Korean fonts, no network, no storage mutation.
  * Raster pages preserve Korean appearance but do not provide searchable text.
  */
 export async function createRecordPdf(blocks: ExportBlock[]): Promise<Blob> {
@@ -58,7 +59,9 @@ export async function createRecordPdf(blocks: ExportBlock[]): Promise<Blob> {
   if (!ctx) throw new Error('Canvas unavailable');
   const images: Uint8Array[]=[];
   let y=margin;
-  const font=(size:number,bold=false)=>`${bold?'600':'400'} ${size}px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif`;
+  // Same face as the app (MaruBuri via next/font); system Korean fonts if it is not available.
+  const family=(typeof document.body!=='undefined'&&document.body?getComputedStyle(document.body).fontFamily:'')||'"Malgun Gothic", "Apple SD Gothic Neo", sans-serif';
+  const font=(size:number,bold=false)=>`${bold?'700':'400'} ${size}px ${family}`;
   function clearPage() { ctx!.fillStyle='#ffffff';ctx!.fillRect(0,0,width,height);y=margin; }
   async function savePage() {
     ctx!.font=font(20);ctx!.fillStyle='#666666';ctx!.fillText(`MindForest · ${images.length+1}`,margin,height-55);
