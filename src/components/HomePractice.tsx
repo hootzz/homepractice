@@ -57,7 +57,8 @@ function GuideAudio({audio}:{audio?:AudioState}) {
   </div>;
 }
 
-function Steps({content,p,accessible,kitOpen,value,setValue}:{content:Practice|WeeklyTask;p?:HomePresentation;accessible:Practice[];kitOpen:boolean;value:string;setValue:(v:string)=>void}) {
+function Steps({content,p,accessible,kitOpen,value,setValue,end}:{content:Practice|WeeklyTask;p?:HomePresentation;accessible:Practice[];kitOpen:boolean;value:string;setValue:(v:string)=>void;
+  /** Shown on the last step only: the choice to leave a trace or to finish. */ end?:ReactNode}) {
   const steps=guidedSteps(content,accessible.map(a=>a.id));
   const [pos,setPos]=useState(0);const ref=useRef<HTMLHeadingElement>(null),moved=useRef(false);
   useEffect(()=>{if(moved.current)ref.current?.focus();},[pos]);
@@ -84,21 +85,22 @@ function Steps({content,p,accessible,kitOpen,value,setValue}:{content:Practice|W
         {inline&&<div id="inline-practice" className="inline-practice rise"><GuideAudio audio={audioState(related)}/><ol>{related.steps.map((t,i)=><li key={t}><strong>{relatedTitles?.[i]}</strong>{t}</li>)}</ol></div>}
       </>}
       {p?.kitStep!==undefined&&step.index===0&&accessible.length>0&&<ul className="recall-list">{accessible.map(a=><li key={a.id}>{a.user_facing_name}</li>)}</ul>}
-      {p?.kitStep===step.index&&(kitOpen&&accessible.length>0
-        ?<Link className="button step-action" href="/my-practice">Practice Kit 열기</Link>
-        :<p className="muted">{accessible.length===0?'아직 열린 연습이 없어요. 고를 연습이 생기면 여기서 이어가요.':'마지막 이야기를 마치면 고를 수 있어요.'}</p>)}
+      {p?.kitStep===step.index&&!(kitOpen&&accessible.length>0)&&<p className="muted">{accessible.length===0?'아직 열린 연습이 없어요. 고를 연습이 생기면 여기서 이어가요.':'마지막 이야기를 마치면 고를 수 있어요.'}</p>}
     </div>
     <div className="step-nav">
       {!last&&<button type="button" className="button" onClick={()=>go(pos+1)}>다음</button>}
       {pos>0&&<button type="button" className="text-link" onClick={()=>go(pos-1)}>이전</button>}
     </div>
+    {last&&end}
   </div>;
 }
 
 export function HomePractice({session,content,accessible,kitOpen,kind,back,eyebrow,memory,audio,record,footer}:Props) {
   const p=content?presentations[content.id]:undefined;
   const [phase,setPhase]=useState<'remember'|'try'>('remember');
-  const [value,setValue]=useState(''),[recordOpen,setRecordOpen]=useState(false),[recordMounted,setRecordMounted]=useState(false);
+  const [value,setValue]=useState(''),[recordOpen,setRecordOpen]=useState(false);
+  const recordBtn=useRef<HTMLButtonElement>(null),closedRecord=useRef(false);
+  useEffect(()=>{if(!recordOpen&&closedRecord.current)recordBtn.current?.focus();},[recordOpen]);
   const todayRef=useRef<HTMLHeadingElement>(null);
   useEffect(()=>{if(phase==='try')todayRef.current?.focus();},[phase]);
   const reminder=content&&'reminder' in content?content.reminder:undefined;
@@ -126,19 +128,21 @@ export function HomePractice({session,content,accessible,kitOpen,kind,back,eyebr
       <section className="hp-today rise" aria-labelledby="today-heading">
         <h2 id="today-heading" ref={todayRef} tabIndex={-1}>{kind==='practice'?'해보기':'오늘 해보기'}</h2>
         <GuideAudio audio={audio}/>
-        <Steps content={content} p={p} accessible={accessible} kitOpen={kitOpen} value={value} setValue={setValue}/>
+        <Steps content={content} p={p} accessible={accessible} kitOpen={kitOpen} value={value} setValue={setValue} end={
+          // The end of a practice: leave a small trace, or simply finish. Neither is required.
+          <div className="end-choice">
+            {!recordOpen&&<div className="end-buttons">
+              {p?.kitStep!==undefined&&kitOpen&&accessible.length>0&&<Link className="button" href="/my-practice">Practice Kit 열기</Link>}
+              {record?.schema&&p?.record&&<button ref={recordBtn} type="button" className="button secondary" onClick={()=>setRecordOpen(true)}>경험 남기기</button>}
+              <Link className="button secondary" href="/">여기서 마치기</Link>
+            </div>}
+            {recordOpen&&record?.schema&&p?.record&&<div id="record-panel" className="rise">
+              <EntryForm inline focusOnMount schema={record.schema!} sessionId={record.sessionId} practiceId={record.practiceId} weeklyTaskId={record.weeklyTaskId} practiceName={title}
+                primaryKeys={leadKeys} initial={choice&&chosen?{[choice.prefillKey]:chosen}:undefined} backHref="/" onCancel={()=>{closedRecord.current=true;setRecordOpen(false);}} cancelLabel="남기지 않기"/>
+            </div>}
+          </div>}/>
         {reminder&&<p className="reminder">{reminder}</p>}
       </section>
-
-      {record?.schema&&p?.record&&<section className="hp-record rise">
-        <button type="button" className="record-toggle" aria-expanded={recordOpen} aria-controls="record-panel" onClick={()=>{setRecordOpen(!recordOpen);setRecordMounted(true);}}>
-          경험 남기기 <span aria-hidden="true">{recordOpen?'−':'+'}</span>
-        </button>
-        {recordMounted&&<div id="record-panel" hidden={!recordOpen}>
-          <EntryForm inline focusOnMount schema={record.schema} sessionId={record.sessionId} practiceId={record.practiceId} weeklyTaskId={record.weeklyTaskId} practiceName={title}
-            primaryKeys={leadKeys} initial={choice&&chosen?{[choice.prefillKey]:chosen}:undefined} backHref={back?.href??'/sessions'}/>
-        </div>}
-      </section>}
       {footer}
     </>}
   </article>;

@@ -17,6 +17,8 @@ export interface PracticeAudio {
     src: string;
     language: 'ko' | 'en';
     credit: string;
+    /** Length of the recording itself (not a home-practice dose). */
+    minutes: number;
     practiceMatch: true;
     usageConfirmed: true;
   };

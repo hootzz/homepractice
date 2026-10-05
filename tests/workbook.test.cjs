@@ -142,8 +142,8 @@ test('concrete titles, V3.3 animals, Korean canonical practice names',()=>{
 test('audio: in-app guide only when practice match AND usage are confirmed; never a link-out',()=>{
   const base={...release.practices[0]};
   assert.equal(audio.audioState({...base,audio:undefined}).kind,'text_only');
-  assert.equal(audio.audioState({...base,audio:{guide:{kind:'youtube',src:'x',language:'ko',credit:'c',practiceMatch:true,usageConfirmed:false}}}).kind,'text_only');
-  const g=audio.audioState({...base,audio:{guide:{kind:'file',src:'/audio/x.mp3',language:'ko',credit:'c',practiceMatch:true,usageConfirmed:true}}});assert.equal(g.kind,'guide');assert.equal(g.source,'file');
+  assert.equal(audio.audioState({...base,audio:{guide:{kind:'youtube',src:'x',language:'ko',credit:'c',minutes:1,practiceMatch:true,usageConfirmed:false}}}).kind,'text_only');
+  const g=audio.audioState({...base,audio:{guide:{kind:'file',src:'/audio/x.mp3',language:'ko',credit:'c',minutes:1,practiceMatch:true,usageConfirmed:true}}});assert.equal(g.kind,'guide');assert.equal(g.source,'file');
   for(const p of release.practices){const a=audio.audioState(p);assert.equal(a.kind,'guide',p.id);assert.equal(a.language,'ko',p.id);assert.equal(a.source,'youtube',p.id);assert(/^[A-Za-z0-9_-]{11}$/.test(a.src),p.id);}
   assert.equal(audio.audioState(release.practices.find(p=>p.id==='breathing_space')).src,'n5Sg3KDaw64');assert.equal(audio.audioState(release.practices.find(p=>p.id==='walking_return')).src,'5ZXdug0sL0o');
 });

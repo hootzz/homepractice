@@ -15,7 +15,15 @@ export function Closed({missing=false}:{missing?:boolean}) {return <section clas
 
 const sessionOf=(id:string)=>sessions.find(s=>s.id===id) as Session;
 /** Formal practices are listed apart from the daily-life practice, quietly. */
-function PracticeRows({items,origin=true}:{items:Practice[];origin?:boolean}) {return <ul className="practice-list">{items.map(p=><li key={p.id}><Link className="practice-row" href={`/practices/${p.id}`}><span>{p.user_facing_name}{origin&&<small className="row-sub">S{sessionOf(p.introducedSessionId).order} · {sessionOf(p.introducedSessionId).animal}에서 열린 연습</small>}</span><span aria-hidden="true">→</span></Link></li>)}</ul>;}
+/** Formal MBCT practices that can be done any time — a quiet shelf of cards, apart from the
+ *  daily-life practice of each scene. No session/animal origin label. */
+function PracticeCards({items}:{items:Practice[]}) {
+  return <ul className="practice-cards">{items.map(p=>{const a=audioState(p);return <li key={p.id}><Link className="practice-card" href={`/practices/${p.id}`}>
+    <strong>{p.user_facing_name}</strong><span>{p.short_description}</span>
+    {a.kind==='guide'&&<small>{a.language==='ko'?'한국어 안내':'안내'} {a.minutes}분</small>}
+  </Link></li>;})}</ul>;
+}
+const ANYTIME='언제든 할 수 있는 마음챙김 연습';
 
 /** Home card: scene thumbnail, "S3 · 사슴", title, one line for today. */
 function TodayCard({session,today}:{session:Session;today:string}) {
@@ -33,7 +41,7 @@ export function HomeView(){
   const regular=repertoire(release,store.progress);
   return <><div className="intro"><h1>지금 이어갈 장면</h1></div>
     {latest&&task?<TodayCard session={latest} today={task.short_description}/>:<div className="empty"><p>{latest?'이번 이야기의 연습을 준비하고 있어요.':'이야기를 마치면 여기에서 이어갈 수 있어요.'}</p><Link className="text-link" href="/sessions">이야기 보기 →</Link></div>}
-    {regular.length>0&&<section className="section quiet"><h2>다시 해볼 수 있는 연습</h2><PracticeRows items={regular}/></section>}
+    {regular.length>0&&<section className="section anytime"><h2>{ANYTIME}</h2><PracticeCards items={regular}/></section>}
     {canSelectKit(store.progress)&&latest?.id!=='s8'&&<p className="section"><Link className="text-link" href="/my-practice">나의 Practice Kit →</Link></p>}</>;
 }
 
@@ -49,8 +57,7 @@ export function SessionView({id}:{id:string}) {
   if(!canAccessSession(session.id,store.progress))return <Closed/>;
   const task=release.weeklyTasks.find(t=>t.sessionId===session.id);
   const regular=repertoire(release,store.progress);
-  const opened=regular.filter(p=>p.introducedSessionId===session.id);
-  const footer=opened.length>0?<section className="hp-more quiet"><h2>다시 해볼 수 있는 연습</h2><PracticeRows items={opened} origin={false}/></section>:undefined;
+  const footer=regular.length>0?<section className="hp-more anytime"><h2>{ANYTIME}</h2><PracticeCards items={regular}/></section>:undefined;
   return <HomePractice key={session.id} kind="session" session={session} content={task} accessible={regular} kitOpen={canSelectKit(store.progress)}
     record={task&&{schema:schemas.find(s=>s.id===task.recordSchemaId),sessionId:session.id,weeklyTaskId:task.id}} footer={footer}/>;
 }
@@ -60,7 +67,7 @@ export function PracticeView({id}:{id:string}) {
   const p=release.practices.find(p=>p.id===id);if(!p)return <Closed missing/>;if(!canAccessPractice(p,store.progress))return <Closed/>;
   const session=sessionOf(p.introducedSessionId);
   return <HomePractice key={p.id} kind="practice" session={session} content={p} accessible={repertoire(release,store.progress)} kitOpen={canSelectKit(store.progress)}
-    back={{href:`/sessions/${session.id}`,label:`S${session.order} ${session.user_facing_name}`}} eyebrow="다시 해볼 수 있는 연습"
+    back={{href:`/sessions/${session.id}`,label:`S${session.order} ${session.user_facing_name}`}} eyebrow="마음챙김 연습"
     memory={p.context} audio={audioState(p)}
     record={{schema:schemas.find(s=>s.id===p.recordSchemaId),sessionId:p.introducedSessionId,practiceId:p.id}}/>;
 }
